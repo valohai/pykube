@@ -41,7 +41,7 @@ class APIObject:
         self._original_obj = copy.deepcopy(obj)
 
     def __repr__(self):
-        return "<{kind} {name}>".format(kind=self.kind, name=self.name)
+        return f"<{self.kind} {self.name}>"
 
     def __str__(self):
         return self.name
@@ -98,7 +98,7 @@ class APIObject:
         if params is not None:
             query_string = urlencode(params)
             kw["url"] = "{}{}".format(
-                kw["url"], "?{}".format(query_string) if query_string else ""
+                kw["url"], f"?{query_string}" if query_string else ""
             )
         if self.base:
             kw["base"] = self.base
@@ -114,7 +114,7 @@ class APIObject:
             self.api.raise_for_status(r)
         if not r.ok:
             if ensure:
-                raise ObjectDoesNotExist("{} does not exist.".format(self.name))
+                raise ObjectDoesNotExist(f"{self.name} does not exist.")
             else:
                 return False
         return True
@@ -425,7 +425,7 @@ class Pod(NamespacedAPIObject):
             params["limitBytes"] = int(limit_bytes)
 
         query_string = urlencode(params)
-        log_call += "?{}".format(query_string) if query_string else ""
+        log_call += f"?{query_string}" if query_string else ""
         kwargs = {
             "version": self.version,
             "namespace": self.namespace,
