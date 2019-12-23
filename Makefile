@@ -7,7 +7,11 @@ default: package
 clean:
 	rm -fr build dist *egg-info .tox/ .cache/ .pytest_cache/ docs/_build/
 
-test:
+.PHONY: install
+install:
+	poetry install
+
+test: install
 	poetry run flake8
 	poetry run black --check pykube
 	poetry run mypy --ignore-missing-imports pykube
