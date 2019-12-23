@@ -3,8 +3,10 @@ import json
 from collections import namedtuple
 
 from urllib.parse import urlencode
+from typing import Union
 
 from .exceptions import ObjectDoesNotExist
+from .http import HTTPClient
 
 
 all_ = object()
@@ -23,7 +25,7 @@ class Table:
         self.api_obj_class = api_obj_class
         self.obj = obj
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Table of {kind} at {address}>".format(
             kind=self.api_obj_class.kind, address=hex(id(self))
         )
@@ -38,22 +40,27 @@ class Table:
 
 
 class BaseQuery:
-    def __init__(self, api, api_obj_class, namespace=None):
+    def __init__(self, api: HTTPClient, api_obj_class, namespace: str = None):
         self.api = api
         self.api_obj_class = api_obj_class
         self.namespace = namespace
         self.selector = everything
         self.field_selector = everything
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Query of {kind} at {address}>".format(
             kind=self.api_obj_class.kind, address=hex(id(self))
         )
 
-    def all(self):
+    def all(self) -> "BaseQuery":
         return self._clone()
 
-    def filter(self, namespace=None, selector=None, field_selector=None):
+    def filter(
+        self,
+        namespace: str = None,
+        selector: Union[str, dict] = None,
+        field_selector: Union[str, dict] = None,
+    ) -> "BaseQuery":
         """
         Filter objects by namespace, labels, or fields
 
@@ -77,27 +84,26 @@ class BaseQuery:
         clone.field_selector = self.field_selector
         return clone
 
-    def _build_api_url(self, params=None):
+    def _build_api_url(self, params: dict = None):
         if params is None:
             params = {}
         if self.selector is not everything:
-            params["labelSelector"] = as_selector(self.selector)
+            params["labelSelector"] = as_selector(self.selector)  # type: ignore
         if self.field_selector is not everything:
-            params["fieldSelector"] = as_selector(self.field_selector)
+            params["fieldSelector"] = as_selector(self.field_selector)  # type: ignore
         query_string = urlencode(params)
         return "{}{}".format(
-            self.api_obj_class.endpoint,
-            "?{}".format(query_string) if query_string else "",
+            self.api_obj_class.endpoint, f"?{query_string}" if query_string else "",
         )
 
 
 class Query(BaseQuery):
-    def get_by_name(self, name):
+    def get_by_name(self, name: str):
         """
         Get object by name, raises ObjectDoesNotExist if not found
         """
         kwargs = {
-            "url": "{}/{}".format(self.api_obj_class.endpoint, name),
+            "url": f"{self.api_obj_class.endpoint}/{name}",
             "namespace": self.namespace,
         }
         if self.api_obj_class.base:
@@ -107,7 +113,7 @@ class Query(BaseQuery):
         r = self.api.get(**kwargs)
         if not r.ok:
             if r.status_code == 404:
-                raise ObjectDoesNotExist("{} does not exist.".format(name))
+                raise ObjectDoesNotExist(f"{name} does not exist.")
             self.api.raise_for_status(r)
         return self.api_obj_class(self.api, r.json())
 
@@ -229,7 +235,7 @@ class WatchQuery(BaseQuery):
         return self._response
 
 
-def as_selector(value):
+def as_selector(value: Union[str, dict]) -> str:
     if isinstance(value, str):
         return value
     s = []
@@ -244,13 +250,13 @@ def as_selector(value):
             op = bits[1]
         # map operator to selector
         if op == "eq":
-            s.append("{}={}".format(label, v))
+            s.append(f"{label}={v}")
         elif op == "neq":
-            s.append("{} != {}".format(label, v))
+            s.append(f"{label} != {v}")
         elif op == "in":
             s.append("{} in ({})".format(label, ",".join(sorted(v))))
         elif op == "notin":
             s.append("{} notin ({})".format(label, ",".join(sorted(v))))
         else:
-            raise ValueError("{} is not a valid comparison operator".format(op))
+            raise ValueError(f"{op} is not a valid comparison operator")
     return ",".join(s)
