@@ -9,15 +9,16 @@ from .exceptions import ObjectDoesNotExist
 from .mixins import ReplicatedMixin, ScalableMixin
 from .query import Query
 from .utils import obj_merge
+from .http import HTTPClient
 
 
 class ObjectManager:
-    def __call__(self, api, namespace=None):
+    def __call__(self, api: HTTPClient, namespace: str = None):
         if namespace is None and NamespacedAPIObject in getmro(self.api_obj_class):
             namespace = api.config.namespace
         return Query(api, self.api_obj_class, namespace=namespace)
 
-    def __get__(self, obj, api_obj_class):
+    def __get__(self, obj, api_obj_class: Type):
         assert obj is None, "cannot invoke objects on resource object."
         self.api_obj_class = api_obj_class
         return self
@@ -31,11 +32,11 @@ class APIObject:
     objects = ObjectManager()
     base = None
 
-    def __init__(self, api, obj):
+    def __init__(self, api: HTTPClient, obj: dict):
         self.api = api
         self.set_obj(obj)
 
-    def set_obj(self, obj):
+    def set_obj(self, obj: dict):
         self.obj = obj
         self._original_obj = copy.deepcopy(obj)
 
