@@ -12,7 +12,7 @@ install:
 	poetry install
 
 .PHONY: lint
-lint:
+lint: install
 	poetry run pre-commit run --all-files
 
 test: lint install
