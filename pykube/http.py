@@ -7,6 +7,7 @@ import os
 import posixpath
 import shlex
 import subprocess
+from typing import Optional
 
 try:
     import google.auth
@@ -187,11 +188,14 @@ class HTTPClient:
     Client for interfacing with the Kubernetes API.
     """
 
+    http_adapter_cls = KubernetesHTTPAdapter
+
     def __init__(
         self,
         config: KubeConfig,
         timeout: float = DEFAULT_HTTP_TIMEOUT,
         dry_run: bool = False,
+        http_adapter: Optional[requests.adapters.HTTPAdapter] = None,
     ):
         """
         Creates a new instance of the HTTPClient.
@@ -206,8 +210,10 @@ class HTTPClient:
 
         session = requests.Session()
         session.headers["User-Agent"] = f"pykube-ng/{__version__}"
-        session.mount("https://", KubernetesHTTPAdapter(self.config))
-        session.mount("http://", KubernetesHTTPAdapter(self.config))
+        if not http_adapter:
+            http_adapter = self.http_adapter_cls(self.config)
+        session.mount("https://", http_adapter)
+        session.mount("http://", http_adapter)
         self.session = session
 
     @property
