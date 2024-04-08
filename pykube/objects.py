@@ -280,7 +280,7 @@ class Deployment(NamespacedAPIObject, ReplicatedMixin, ScalableMixin):
             "operation": "rollback",
         }
         r = self.api.post(**self.api_kwargs(data=json.dumps(params), **kwargs))
-        r.raise_for_status()
+        self.api.raise_for_status(r)
         return r.text
 
 
@@ -419,7 +419,7 @@ class Pod(NamespacedAPIObject):
             "operation": log_call,
         }
         r = self.api.get(**self.api_kwargs(**kwargs))
-        r.raise_for_status()
+        self.api.raise_for_status(r)
         return r.text
 
 

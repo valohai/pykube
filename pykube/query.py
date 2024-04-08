@@ -157,7 +157,7 @@ class Query(BaseQuery):
         if self.namespace is not None and self.namespace is not all_:
             kwargs["namespace"] = self.namespace
         r = self.api.get(**kwargs)
-        r.raise_for_status()
+        self.api.raise_for_status(r)
         return r
 
     def as_table(self) -> Table:

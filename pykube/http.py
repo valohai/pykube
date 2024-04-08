@@ -343,7 +343,7 @@ class HTTPClient:
         Get Kubernetes API version
         """
         response = self.get(version="", base="/version")
-        response.raise_for_status()
+        self.raise_for_status(response)
         data = response.json()
         return (data["major"], data["minor"])
 
@@ -351,7 +351,7 @@ class HTTPClient:
         cached_attr = f"_cached_resource_list_{api_version}"
         if not hasattr(self, cached_attr):
             r = self.get(version=api_version)
-            r.raise_for_status()
+            self.raise_for_status(r)
             setattr(self, cached_attr, r.json())
         return getattr(self, cached_attr)
 
